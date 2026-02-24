@@ -44,7 +44,7 @@ log "Nginx HTTP đang chạy"
 
 # ── Bước 4: Xin chứng chỉ SSL từ Let's Encrypt ────
 info "Xin chứng chỉ SSL cho ${DOMAIN}..."
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint "certbot" certbot certonly \
   --webroot \
   --webroot-path=/var/www/certbot \
   --email "${EMAIL}" \
