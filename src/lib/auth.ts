@@ -4,8 +4,10 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import { db } from "./db";
 
-const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? false;
-const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+// Force false: App chạy sau Nginx reverse proxy (HTTPS terminated ở Nginx).
+// Node.js nhận request qua HTTP nội bộ nên không thể set secure cookies.
+const useSecureCookies = false;
+const cookiePrefix = "";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as any,
