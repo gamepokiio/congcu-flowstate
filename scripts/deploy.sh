@@ -30,20 +30,20 @@ log "Code updated"
 
 # ── Build Docker images ────────────────────────────
 info "Build Docker images..."
-docker-compose build --no-cache app
+docker compose build --no-cache app
 log "Images built"
 
 # ── Zero-downtime restart ──────────────────────────
 info "Restart services..."
 
 # Khởi động DB & Redis trước (nếu chưa chạy)
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
 
 # Chờ PostgreSQL sẵn sàng (thay vì sleep 5 cố định)
 info "Chờ PostgreSQL sẵn sàng..."
 MAX_DB_WAIT=30
 for i in $(seq 1 $MAX_DB_WAIT); do
-  if docker-compose exec -T postgres pg_isready -U "${POSTGRES_USER:-flowstate}" &>/dev/null; then
+  if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-flowstate}" &>/dev/null; then
     log "PostgreSQL ready!"
     break
   fi
@@ -57,11 +57,11 @@ done
 
 # Migrate database — chạy trong container app mới build
 info "Chạy database migrations..."
-docker-compose run --rm app npx prisma@5.22.0 migrate deploy
+docker compose run --rm app npx prisma@5.22.0 migrate deploy
 log "Database migrated"
 
 # Restart app với image mới
-docker-compose up -d --force-recreate app nginx
+docker compose up -d --force-recreate app nginx
 log "App restarted"
 
 # ── Health check ───────────────────────────────────
@@ -82,7 +82,7 @@ done
 
 if [ "$STATUS" != "200" ]; then
   echo "❌ Health check thất bại!"
-  echo "   Xem logs: docker-compose logs app"
+  echo "   Xem logs: docker compose logs app"
   exit 1
 fi
 
@@ -95,4 +95,4 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 log "🎉 Deploy thành công!"
 echo ""
-docker-compose ps
+docker compose ps
