@@ -44,7 +44,12 @@ model VerificationToken {
 }
 
 // ─── USER ───────────────────────────────────────────
-enum Role { USER PREMIUM ADMIN SUPER_ADMIN }
+enum Role {
+  USER
+  PREMIUM
+  ADMIN
+  SUPER_ADMIN
+}
 
 model User {
   id            String    @id @default(cuid())
@@ -96,7 +101,11 @@ model Subscription {
 }
 
 // ─── TASKS ──────────────────────────────────────────
-enum Priority { LOW MEDIUM HIGH }
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
 
 model Task {
   id           String    @id @default(cuid())
@@ -115,7 +124,11 @@ model Task {
 }
 
 // ─── POMODORO SESSIONS ───────────────────────────────
-enum SessionType { FOCUS SHORT_BREAK LONG_BREAK }
+enum SessionType {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+}
 
 model PomodoroSession {
   id        String      @id @default(cuid())
