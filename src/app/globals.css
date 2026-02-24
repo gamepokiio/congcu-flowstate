@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #090c12;
+  --bg2: #0d1017;
+  --surface: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --accent: #e8a87c;
+  --teal: #7ec8c8;
+  --purple: #c8a7e8;
+  --green: #7ce8a8;
+  --text: #e8e2d9;
+  --dim: rgba(232,226,217,0.55);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Focus visible — accessibility */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+/* Prose styles for blog content */
+.prose h2 { font-family: 'Lora', serif; font-size: 1.4rem; margin: 32px 0 14px; color: var(--text); }
+.prose h3 { font-size: 1.1rem; margin: 24px 0 10px; color: var(--text); font-weight: 600; }
+.prose p  { color: var(--dim); margin-bottom: 16px; line-height: 1.85; }
+.prose strong { color: var(--text); }
+.prose a  { color: var(--teal); }
+.prose ul { padding-left: 20px; color: var(--dim); }
+.prose li { margin-bottom: 6px; line-height: 1.7; }
+.prose blockquote { border-left: 3px solid var(--accent); padding-left: 16px; color: var(--dim); font-style: italic; margin: 20px 0; }
+.prose code { font-family: 'JetBrains Mono', monospace; font-size: .82em; background: rgba(126,200,200,.1); padding: 2px 7px; border-radius: 5px; color: var(--teal); }

@@ -1,0 +1,216 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  // linux-musl-openssl-3.0.x: cần thiết cho node:alpine trong Dockerfile
+  // Thiếu dòng này → Prisma client crash trên Alpine Linux container
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH (NextAuth) ────────────────────────────────
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// ─── USER ───────────────────────────────────────────
+enum Role { USER PREMIUM ADMIN SUPER_ADMIN }
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  tasks            Task[]
+  pomodoroSessions PomodoroSession[]
+  habits           Habit[]
+  goals            Goal[]
+  journalEntries   JournalEntry[]
+  moodLogs         MoodLog[]
+  settings         UserSettings?
+  subscription     Subscription?
+}
+
+model UserSettings {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  focusDuration   Int     @default(25)
+  shortBreak      Int     @default(5)
+  longBreak       Int     @default(15)
+  dailyGoal       Int     @default(8)
+  autoStartBreaks Boolean @default(false)
+  soundEnabled    Boolean @default(true)
+  theme           String  @default("nightdesk")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── SUBSCRIPTION ───────────────────────────────────
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  stripeCustomerId String?   @unique
+  stripePriceId    String?
+  stripeSubId      String?   @unique
+  status           String    @default("inactive")
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── TASKS ──────────────────────────────────────────
+enum Priority { LOW MEDIUM HIGH }
+
+model Task {
+  id           String    @id @default(cuid())
+  userId       String
+  title        String
+  completed    Boolean   @default(false)
+  priority     Priority  @default(MEDIUM)
+  pomoEstimate Int       @default(1)
+  pomoDone     Int       @default(0)
+  dueDate      DateTime?
+  category     String?
+  order        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── POMODORO SESSIONS ───────────────────────────────
+enum SessionType { FOCUS SHORT_BREAK LONG_BREAK }
+
+model PomodoroSession {
+  id        String      @id @default(cuid())
+  userId    String
+  type      SessionType @default(FOCUS)
+  duration  Int
+  completed Boolean     @default(false)
+  taskId    String?
+  mood      String?
+  notes     String?     @db.Text
+  startedAt DateTime    @default(now())
+  endedAt   DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── HABITS ─────────────────────────────────────────
+model Habit {
+  id        String     @id @default(cuid())
+  userId    String
+  name      String
+  emoji     String     @default("✅")
+  color     String     @default("#7ec8c8")
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
+  logs      HabitLog[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      DateTime @db.Date
+  completed Boolean  @default(true)
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  @@unique([habitId, date])
+}
+
+// ─── GOALS ──────────────────────────────────────────
+model Goal {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  category  String
+  target    Float
+  current   Float     @default(0)
+  unit      String    @default("")
+  deadline  DateTime?
+  completed Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── JOURNAL ────────────────────────────────────────
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String   @db.Text
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, date])
+}
+
+// ─── MOOD ───────────────────────────────────────────
+model MoodLog {
+  id        String   @id @default(cuid())
+  userId    String
+  mood      String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, date])
+}
+
+// ─── MUSIC (Admin managed) ───────────────────────────
+model MusicPlaylist {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  emoji       String   @default("🎵")
+  youtubeId   String
+  isPremium   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── AUDIT LOG ───────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  targetId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

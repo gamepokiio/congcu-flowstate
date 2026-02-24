@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowState — Hướng Dẫn Deploy VPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#090c12;--bg2:#0d1017;--bg3:#111419;
+  --surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);--surface3:rgba(255,255,255,0.10);
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.13);
+  --accent:#e8a87c;--teal:#7ec8c8;--purple:#c8a7e8;--green:#7ce8a8;--red:#e87c7c;
+  --text:#e8e2d9;--dim:rgba(232,226,217,0.55);--muted:rgba(232,226,217,0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.7;overflow-x:hidden;}
+a{color:var(--teal);text-decoration:none;}
+a:hover{text-decoration:underline;}
+code{font-family:'JetBrains Mono',monospace;font-size:.78em;background:rgba(126,200,200,.1);padding:2px 7px;border-radius:5px;color:var(--teal);}
+p{color:var(--dim);font-size:.85rem;margin-bottom:10px;}
+h3{font-size:1rem;font-weight:600;margin:22px 0 10px;color:var(--text);}
+
+/* BG */
+.bg-glow{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 65% 45% at 8% 12%,rgba(232,168,124,.06) 0%,transparent 55%),
+             radial-gradient(ellipse 55% 45% at 92% 88%,rgba(126,200,200,.05) 0%,transparent 50%),
+             radial-gradient(ellipse 40% 35% at 50% 50%,rgba(200,167,232,.03) 0%,transparent 55%);}
+
+/* LAYOUT */
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:280px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;
+  border-right:1px solid var(--border);background:rgba(8,10,16,.85);backdrop-filter:blur(24px);
+  display:flex;flex-direction:column;}
+.sb-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);}
+.sb-logo-text{font-family:'Lora',serif;font-size:1.05rem;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.sb-logo-sub{font-size:.68rem;color:var(--muted);margin-top:3px;}
+
+.sb-progress{padding:14px 20px;border-bottom:1px solid var(--border);}
+.sb-progress-label{font-size:.62rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;display:flex;justify-content:space-between;}
+.sb-progress-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.sb-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--teal));border-radius:2px;transition:width .3s;}
+
+.sb-section{padding:10px 0 2px;border-bottom:1px solid rgba(255,255,255,.04);}
+.sb-section-label{padding:0 20px 5px;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.nav-link{display:flex;align-items:center;gap:9px;padding:7px 20px;cursor:pointer;
+  font-size:.79rem;color:var(--dim);text-decoration:none;transition:all .15s;
+  border-left:2px solid transparent;position:relative;}
+.nav-link:hover{background:var(--surface);color:var(--text);}
+.nav-link.active{background:linear-gradient(90deg,rgba(232,168,124,.1),transparent);
+  border-left-color:var(--accent);color:var(--accent);}
+.nav-link:hover{text-decoration:none;}
+.nav-idx{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);width:18px;flex-shrink:0;}
+.nav-done{margin-left:auto;width:16px;height:16px;border-radius:50%;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:.55rem;flex-shrink:0;transition:all .2s;}
+.nav-done.checked{background:var(--green);border-color:var(--green);color:#0a1a0a;}
+.nav-time{margin-left:auto;font-size:.6rem;color:var(--muted);background:var(--surface2);
+  padding:2px 8px;border-radius:8px;border:1px solid var(--border);}
+
+/* CONTENT */
+.content{padding:44px 52px 100px;max-width:900px;}
+
+/* PROGRESS TOP */
+.progress-top{position:fixed;top:0;left:0;right:0;z-index:200;height:2px;background:var(--border);}
+.progress-top-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--teal),var(--purple));transition:width .1s;}
+
+/* HERO */
+.hero{padding:0 0 44px;border-bottom:1px solid var(--border);margin-bottom:52px;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:4px 14px;border-radius:20px;
+  background:rgba(232,168,124,.09);border:1px solid rgba(232,168,124,.18);
+  font-size:.68rem;font-weight:600;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px;}
+.hero-title{font-family:'Lora',serif;font-size:2.1rem;font-weight:600;line-height:1.25;margin-bottom:14px;}
+.hero-title span{color:var(--accent);}
+.hero-title .teal{color:var(--teal);}
+.hero-desc{font-size:.9rem;color:var(--dim);max-width:600px;line-height:1.85;margin-bottom:22px;}
+.hero-chips{display:flex;gap:10px;flex-wrap:wrap;}
+.chip{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);
+  font-size:.75rem;color:var(--dim);display:flex;align-items:center;gap:6px;}
+
+/* STEP SECTION */
+.step{margin-bottom:64px;scroll-margin-top:28px;}
+.step-hdr{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.step-num{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;flex-shrink:0;}
+.c0{background:rgba(126,200,200,.12);border:1px solid rgba(126,200,200,.22);color:var(--teal);}
+.c1{background:rgba(232,124,124,.1);border:1px solid rgba(232,124,124,.2);color:var(--red);}
+.c2{background:rgba(232,168,124,.11);border:1px solid rgba(232,168,124,.2);color:var(--accent);}
+.c3{background:rgba(126,200,200,.1);border:1px solid rgba(126,200,200,.2);color:var(--teal);}
+.c4{background:rgba(200,167,232,.1);border:1px solid rgba(200,167,232,.18);color:var(--purple);}
+.c5{background:rgba(124,232,168,.1);border:1px solid rgba(124,232,168,.18);color:var(--green);}
+.c6{background:rgba(232,168,124,.11);border:1px solid rgba(232,168,124,.2);color:var(--accent);}
+.c7{background:rgba(200,167,232,.1);border:1px solid rgba(200,167,232,.18);color:var(--purple);}
+.c8{background:rgba(232,124,124,.1);border:1px solid rgba(232,124,124,.2);color:var(--red);}
+
+.step-meta{}
+.step-title{font-family:'Lora',serif;font-size:1.2rem;font-weight:600;}
+.step-sub{font-size:.78rem;color:var(--dim);margin-top:3px;}
+.step-dur{margin-left:auto;font-size:.7rem;color:var(--muted);background:var(--surface2);
+  padding:3px 12px;border-radius:20px;border:1px solid var(--border);flex-shrink:0;}
+
+/* CODE BLOCKS */
+.code-wrap{position:relative;margin:14px 0;}
+.code-file{position:absolute;top:-1px;left:0;padding:4px 14px;border-radius:9px 9px 0 0;
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.06em;
+  background:var(--surface3);border:1px solid var(--border);border-bottom:none;color:var(--muted);}
+.code-lang{position:absolute;top:9px;right:46px;font-size:.6rem;padding:2px 8px;border-radius:6px;
+  background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+  font-family:'JetBrains Mono',monospace;}
+.code-copy{position:absolute;top:7px;right:7px;padding:4px 10px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface);color:var(--muted);
+  cursor:pointer;font-size:.62rem;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.code-copy:hover{background:var(--surface2);color:var(--text);}
+.code-copy.ok{background:rgba(124,232,168,.12);border-color:rgba(124,232,168,.22);color:var(--green);}
+.cb{background:var(--bg2);border:1px solid var(--border);border-radius:11px;
+  padding:16px 18px;font-family:'JetBrains Mono',monospace;font-size:.76rem;
+  color:var(--dim);overflow-x:auto;line-height:1.9;white-space:pre;}
+.cb.has-file{border-radius:0 11px 11px 11px;margin-top:0;}
+.cm{color:var(--muted);font-style:italic;}
+.kw{color:var(--purple);}
+.str{color:var(--green);}
+.fn{color:var(--teal);}
+.nm{color:var(--accent);}
+.hl{background:rgba(232,168,124,.12);border-radius:3px;}
+.err-hl{background:rgba(232,124,124,.12);border-radius:3px;}
+
+/* BOXES */
+.box{display:flex;gap:12px;padding:13px 16px;border-radius:11px;margin:14px 0;font-size:.82rem;line-height:1.7;}
+.bi{background:rgba(126,200,200,.06);border:1px solid rgba(126,200,200,.13);}
+.bw{background:rgba(232,168,124,.06);border:1px solid rgba(232,168,124,.13);}
+.bt{background:rgba(200,167,232,.06);border:1px solid rgba(200,167,232,.13);}
+.bs{background:rgba(124,232,168,.06);border:1px solid rgba(124,232,168,.13);}
+.be{background:rgba(232,124,124,.06);border:1px solid rgba(232,124,124,.13);}
+.box-icon{font-size:1.05rem;flex-shrink:0;margin-top:1px;}
+.box-body{color:var(--dim);}
+.box-body strong{color:var(--text);}
+.box-body code{font-size:.74em;}
+
+/* ARCHITECTURE DIAGRAM */
+.arch{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:20px 24px;margin:16px 0;font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  color:var(--dim);line-height:2.2;}
+.arch-box{display:inline-block;padding:3px 12px;border-radius:7px;}
+.arch-internet{background:rgba(232,168,124,.12);border:1px solid rgba(232,168,124,.22);color:var(--accent);}
+.arch-nginx{background:rgba(126,200,200,.1);border:1px solid rgba(126,200,200,.2);color:var(--teal);}
+.arch-app{background:rgba(200,167,232,.1);border:1px solid rgba(200,167,232,.18);color:var(--purple);}
+.arch-db{background:rgba(124,232,168,.08);border:1px solid rgba(124,232,168,.16);color:var(--green);}
+.arch-redis{background:rgba(232,124,124,.08);border:1px solid rgba(232,124,124,.14);color:var(--red);}
+.arch-arrow{color:var(--muted);}
+
+/* CHECKLIST */
+.cl{list-style:none;display:flex;flex-direction:column;gap:2px;margin:10px 0;}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:9px;font-size:.82rem;color:var(--dim);cursor:pointer;transition:background .15s;}
+.cl-item:hover{background:var(--surface);}
+.cl-cb{width:17px;height:17px;border-radius:5px;border:1px solid var(--border);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;font-size:.6rem;margin-top:2px;
+  transition:all .2s;background:transparent;}
+.cl-cb.on{background:var(--green);border-color:var(--green);color:#0a1a0a;}
+.cl-text strong{color:var(--text);}
+.cl-text code{font-size:.74em;}
+
+/* VPS COMPARISON TABLE */
+.vps-table{width:100%;border-collapse:collapse;margin:14px 0;border-radius:11px;overflow:hidden;border:1px solid var(--border);}
+.vps-table th{text-align:left;padding:10px 14px;font-size:.65rem;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--surface);}
+.vps-table td{padding:10px 14px;font-size:.8rem;color:var(--dim);border-top:1px solid rgba(255,255,255,.04);}
+.vps-table tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-block;padding:2px 9px;border-radius:7px;font-size:.63rem;font-weight:600;}
+.badge-g{background:rgba(124,232,168,.12);color:var(--green);border:1px solid rgba(124,232,168,.2);}
+.badge-y{background:rgba(232,168,124,.12);color:var(--accent);border:1px solid rgba(232,168,124,.2);}
+.badge-r{background:rgba(232,124,124,.1);color:var(--red);border:1px solid rgba(232,124,124,.18);}
+
+/* STEPS NUMBERED */
+ol.steps{padding-left:0;list-style:none;display:flex;flex-direction:column;gap:6px;}
+ol.steps>li{display:flex;gap:12px;font-size:.83rem;color:var(--dim);padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+ol.steps>li:last-child{border-bottom:none;}
+ol.steps>li::before{content:attr(data-n);font-family:'JetBrains Mono',monospace;font-size:.68rem;
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:2px 8px;color:var(--muted);flex-shrink:0;height:fit-content;margin-top:1px;}
+ol.steps>li strong{color:var(--text);}
+ol.steps>li code{font-size:.74em;}
+
+/* FILE TREE */
+.ftree{background:var(--bg2);border:1px solid var(--border);border-radius:11px;
+  padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:.74rem;
+  line-height:2.1;color:var(--dim);}
+.ft-dir{color:var(--teal);}
+.ft-new{color:var(--green);}
+.ft-cm{color:var(--muted);font-style:italic;}
+
+/* COMPARISON GRID */
+.vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
+.vs-card{padding:18px;border-radius:12px;background:var(--surface);border:1px solid var(--border);}
+.vs-title{font-size:.85rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.vs-list{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.vs-list li{font-size:.78rem;color:var(--dim);display:flex;align-items:flex-start;gap:7px;}
+.vs-list li::before{content:'•';color:var(--muted);flex-shrink:0;margin-top:1px;}
+
+/* RESPONSIVE */
+@media(max-width:860px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .content{padding:24px 18px;}
+  .vs-grid{grid-template-columns:1fr;}
+}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="progress-top"><div class="progress-top-fill" id="pgfill"></div></div>
+<div class="bg-glow"></div>
+
+<div class="layout">
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-text">🌿 FlowState VPS Guide</div>
+    <div class="sb-logo-sub">Self-hosted · Docker · Nginx · SSL</div>
+  </div>
+
+  <div class="sb-progress">
+    <div class="sb-progress-label">
+      <span>Tiến độ</span>
+      <span id="progressText">0/10</span>
+    </div>
+    <div class="sb-progress-bar"><div class="sb-progress-fill" id="sbfill" style="width:0%"></div></div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-section-label">Hiểu bức tranh tổng thể</div>
+    <a class="nav-link active" href="#s0"><span class="nav-idx">00</span>Kiến trúc hệ thống<span class="nav-done" id="nd0"></span></a>
+    <a class="nav-link" href="#s1"><span class="nav-idx">01</span>Chọn & mua VPS<span class="nav-done" id="nd1"></span></a>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-section-label">Chuẩn bị VPS</div>
+    <a class="nav-link" href="#s2"><span class="nav-idx">02</span>SSH vào server<span class="nav-done" id="nd2"></span></a>
+    <a class="nav-link" href="#s3"><span class="nav-idx">03</span>Cài Docker &amp; tools<span class="nav-done" id="nd3"></span></a>
+    <a class="nav-link" href="#s4"><span class="nav-idx">04</span>Clone code &amp; config<span class="nav-done" id="nd4"></span></a>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-section-label">Deploy</div>
+    <a class="nav-link" href="#s5"><span class="nav-idx">05</span>Lấy SSL certificate<span class="nav-done" id="nd5"></span></a>
+    <a class="nav-link" href="#s6"><span class="nav-idx">06</span>Build &amp; chạy Docker<span class="nav-done" id="nd6"></span></a>
+    <a class="nav-link" href="#s7"><span class="nav-idx">07</span>Trỏ domain về VPS<span class="nav-done" id="nd7"></span></a>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-section-label">Vận hành</div>
+    <a class="nav-link" href="#s8"><span class="nav-idx">08</span>CI/CD tự động<span class="nav-done" id="nd8"></span></a>
+    <a class="nav-link" href="#s9"><span class="nav-idx">09</span>Monitoring &amp; backup<span class="nav-done" id="nd9"></span></a>
+    <a class="nav-link" href="#s10"><span class="nav-idx">10</span>Xử lý sự cố<span class="nav-done" id="nd10"></span></a>
+  </div>
+</nav>
+
+<!-- ══ MAIN CONTENT ══════════════════════════════════════ -->
+<main class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">🖥️ VPS Self-Hosted Edition</div>
+  <h1 class="hero-title">Deploy <span>FlowState</span> lên<br><span class="teal">VPS riêng</span> từ A → Z</h1>
+  <p class="hero-desc">Toàn quyền kiểm soát server, không phụ thuộc Vercel, chi phí cố định. Hướng dẫn từng lệnh một — từ người mới chưa bao giờ SSH đến website chạy production.</p>
+  <div class="hero-chips">
+    <div class="chip">🐳 Docker + Docker Compose</div>
+    <div class="chip">🔒 SSL tự động (Let's Encrypt)</div>
+    <div class="chip">⚡ Nginx reverse proxy</div>
+    <div class="chip">🔄 CI/CD với GitHub Actions</div>
+    <div class="chip">💾 Auto backup hàng ngày</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 0: ARCHITECTURE -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s0">
+  <div class="step-hdr">
+    <div class="step-num c0">00</div>
+    <div class="step-meta">
+      <div class="step-title">Kiến Trúc Hệ Thống</div>
+      <div class="step-sub">Hiểu cái gì chạy ở đâu trước khi làm</div>
+    </div>
+    <div class="step-dur">📖 Đọc</div>
+  </div>
+
+  <p>Thay vì một server từ Vercel, bạn tự quản lý toàn bộ stack. Mọi thứ chạy trong Docker containers trên VPS của bạn:</p>
+
+  <div class="arch">
+<span class="arch-box arch-internet">🌐  Internet / Users</span>
+          ↓ HTTPS (port 443)
+<span class="arch-box arch-nginx">⚡  Nginx Container</span>   <span class="cm">← Reverse proxy, SSL termination, rate limiting</span>
+          ↓ HTTP (port 3000, internal)
+<span class="arch-box arch-app">🟣  Next.js App Container</span>  <span class="cm">← FlowState application</span>
+       ↙          ↘
+<span class="arch-box arch-db">🗄️  PostgreSQL</span>     <span class="arch-box arch-redis">🔴  Redis</span>   <span class="cm">← Database & Cache</span>
+<span class="cm">
+Tất cả containers trong 1 Docker network nội bộ.
+Chỉ Nginx mới expose port ra internet (80 và 443).</span>
+  </div>
+
+  <div class="vs-grid">
+    <div class="vs-card">
+      <div class="vs-title" style="color:var(--accent)">✅ Ưu điểm tự host</div>
+      <ul class="vs-list">
+        <li>Chi phí cố định $6–20/tháng dù traffic cao</li>
+        <li>Toàn quyền kiểm soát server và data</li>
+        <li>Không bị vendor lock-in</li>
+        <li>SSH trực tiếp, debug dễ hơn</li>
+        <li>Cài thêm bất kỳ software nào</li>
+        <li>Học được nhiều về DevOps</li>
+      </ul>
+    </div>
+    <div class="vs-card">
+      <div class="vs-title" style="color:var(--dim)">⚠️ Cần lưu ý</div>
+      <ul class="vs-list">
+        <li>Bạn tự chịu trách nhiệm bảo mật</li>
+        <li>Cần tự cấu hình SSL, firewall</li>
+        <li>Uptime phụ thuộc nhà cung cấp VPS</li>
+        <li>Tự setup monitoring và backup</li>
+        <li>Cần chút kiến thức Linux cơ bản</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box bi">
+    <span class="box-icon">💡</span>
+    <div class="box-body"><strong>Docker là gì?</strong> Hãy tưởng tượng mỗi service (app, database, nginx) là một "hộp" riêng biệt với mọi thứ nó cần bên trong. Docker quản lý các hộp này — khởi động, dừng, kết nối chúng với nhau. Nếu app lỗi, chỉ hộp app bị ảnh hưởng, database vẫn an toàn.</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 1: CHỌN VPS -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s1">
+  <div class="step-hdr">
+    <div class="step-num c1">01</div>
+    <div class="step-meta">
+      <div class="step-title">Chọn &amp; Mua VPS</div>
+      <div class="step-sub">Nhà cung cấp, cấu hình tối thiểu, và những điều cần biết</div>
+    </div>
+    <div class="step-dur">⏱ 20 phút</div>
+  </div>
+
+  <h3>Cấu hình tối thiểu cho FlowState</h3>
+  <div class="box bw">
+    <span class="box-icon">⚙️</span>
+    <div class="box-body"><strong>Yêu cầu:</strong> 1 vCPU · 1GB RAM (2GB tốt hơn) · 20GB SSD · Ubuntu 22.04 LTS · Băng thông 1TB/tháng</div>
+  </div>
+
+  <h3>So sánh nhà cung cấp VPS</h3>
+  <table class="vps-table">
+    <thead><tr><th>Nhà cung cấp</th><th>Gói rẻ nhất</th><th>RAM</th><th>Server tại</th><th>Thanh toán</th><th>Đánh giá</th></tr></thead>
+    <tbody>
+      <tr><td><strong>DigitalOcean</strong></td><td>$6/tháng</td><td>1GB</td><td>Singapore</td><td>Thẻ / PayPal</td><td><span class="badge badge-g">Khuyên dùng</span></td></tr>
+      <tr><td><strong>Vultr</strong></td><td>$2.5/tháng</td><td>512MB</td><td>Singapore</td><td>Thẻ / PayPal</td><td><span class="badge badge-g">Tốt</span></td></tr>
+      <tr><td><strong>Linode (Akamai)</strong></td><td>$5/tháng</td><td>1GB</td><td>Singapore/Tokyo</td><td>Thẻ</td><td><span class="badge badge-g">Tốt</span></td></tr>
+      <tr><td><strong>Viettel IDC</strong></td><td>~150k/tháng</td><td>1GB</td><td>Hà Nội / HCM</td><td>Chuyển khoản VND</td><td><span class="badge badge-y">Việt Nam</span></td></tr>
+      <tr><td><strong>AZDIGI</strong></td><td>~100k/tháng</td><td>1GB</td><td>HCM</td><td>Chuyển khoản VND</td><td><span class="badge badge-y">Việt Nam</span></td></tr>
+      <tr><td><strong>AWS/GCP/Azure</strong></td><td>Pay-as-you-go</td><td>Tùy</td><td>Toàn cầu</td><td>Thẻ</td><td><span class="badge badge-r">Phức tạp hơn</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tạo VPS trên DigitalOcean (hướng dẫn)</h3>
+  <ol class="steps">
+    <li data-n="1">Vào <a href="https://digitalocean.com" target="_blank">digitalocean.com</a> → Sign up (có $200 free credit 60 ngày)</li>
+    <li data-n="2">Click <strong>Create → Droplets</strong></li>
+    <li data-n="3">Chọn Region: <strong>Singapore</strong> (gần VN nhất)</li>
+    <li data-n="4">Image: <strong>Ubuntu 22.04 LTS x64</strong></li>
+    <li data-n="5">Size: <strong>Basic → Regular → $6/mo</strong> (1vCPU, 1GB RAM, 25GB SSD)</li>
+    <li data-n="6">Authentication: <strong>SSH Key</strong> (khuyến nghị) hoặc Password</li>
+    <li data-n="7">Hostname: <code>flowstate-prod</code></li>
+    <li data-n="8">Create Droplet → Chờ ~60 giây → Copy IP address</li>
+  </ol>
+
+  <div class="box bs">
+    <span class="box-icon">✅</span>
+    <div class="box-body"><strong>Checkpoint:</strong> Bạn có một IP address dạng <code>167.172.xxx.xxx</code>. Đây là "địa chỉ nhà" của server bạn trên internet.</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 2: SSH -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s2">
+  <div class="step-hdr">
+    <div class="step-num c2">02</div>
+    <div class="step-meta">
+      <div class="step-title">SSH Vào Server</div>
+      <div class="step-sub">Kết nối terminal từ máy tính của bạn vào VPS</div>
+    </div>
+    <div class="step-dur">⏱ 10 phút</div>
+  </div>
+
+  <div class="box bi">
+    <span class="box-icon">🔑</span>
+    <div class="box-body"><strong>SSH là gì?</strong> Secure Shell — cho phép bạn điều khiển server từ xa qua terminal. Như TeamViewer nhưng bằng text commands, nhanh hơn và bảo mật hơn.</div>
+  </div>
+
+  <h3>Từ Mac / Linux</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Mở Terminal, gõ lệnh này (thay YOUR_VPS_IP bằng IP thật)</span>
+ssh root@YOUR_VPS_IP
+
+<span class="cm"># Lần đầu sẽ hỏi: "Are you sure you want to continue connecting?"</span>
+<span class="cm"># Gõ: yes ↵</span>
+
+<span class="cm"># Nếu dùng password (thay vì SSH key):</span>
+ssh root@YOUR_VPS_IP
+<span class="cm"># Nhập password từ email DigitalOcean gửi cho bạn</span></div>
+  </div>
+
+  <h3>Từ Windows (dùng PowerShell hoặc PuTTY)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">powershell</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Windows 10/11 đã có SSH sẵn trong PowerShell:</span>
+ssh root@YOUR_VPS_IP
+
+<span class="cm"># Hoặc dùng PuTTY (tải tại putty.org):</span>
+<span class="cm"># Host Name: YOUR_VPS_IP, Port: 22, Connection type: SSH → Open</span></div>
+  </div>
+
+  <h3>Bạn sẽ thấy màn hình như này — nghĩa là thành công!</h3>
+  <div class="code-wrap">
+    <div class="cb"><span class="nm">root@flowstate-prod</span>:~# <span class="cm">← Bạn đang điều khiển server!</span></div>
+  </div>
+
+  <h3>Tạo user không phải root (bảo mật hơn)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Tạo user mới tên "deploy"</span>
+adduser deploy
+<span class="cm"># → Nhập password → Enter qua các fields còn lại</span>
+
+<span class="cm"># Cho phép deploy dùng sudo</span>
+usermod -aG sudo deploy
+
+<span class="cm"># Copy SSH key sang user mới (nếu dùng SSH key)</span>
+rsync --archive --chown=deploy:deploy ~/.ssh /home/deploy
+
+<span class="cm"># Đăng xuất root và login bằng deploy</span>
+exit
+ssh deploy@YOUR_VPS_IP</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 3: CÀI DOCKER -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s3">
+  <div class="step-hdr">
+    <div class="step-num c3">03</div>
+    <div class="step-meta">
+      <div class="step-title">Cài Docker &amp; Chuẩn Bị Server</div>
+      <div class="step-sub">Script tự động — 1 lệnh cài tất cả</div>
+    </div>
+    <div class="step-dur">⏱ 15 phút</div>
+  </div>
+
+  <p>Source code có sẵn script <code>scripts/setup-vps.sh</code> làm tất cả. Nhưng nếu chưa có code trên server, chạy thủ công:</p>
+
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># ─── Cập nhật system ────────────────────────────────</span>
+sudo apt update && sudo apt upgrade -y
+
+<span class="cm"># ─── Cài Docker (1 lệnh duy nhất) ──────────────────</span>
+curl -fsSL https://get.docker.com | sudo sh
+
+<span class="cm"># Cho phép user hiện tại dùng Docker không cần sudo</span>
+sudo usermod -aG docker $USER
+newgrp docker  <span class="cm"># Apply ngay không cần logout</span>
+
+<span class="cm"># Kiểm tra Docker đã chạy chưa</span>
+docker --version       <span class="cm"># Docker version 25.x.x</span>
+docker run hello-world <span class="cm"># Nếu in ra "Hello from Docker!" → OK!</span>
+
+<span class="cm"># ─── Cài Docker Compose ─────────────────────────────</span>
+sudo apt install docker-compose-plugin -y
+docker compose version  <span class="cm"># Docker Compose version v2.x.x</span>
+
+<span class="cm"># ─── Cài Git ────────────────────────────────────────</span>
+sudo apt install git -y
+
+<span class="cm"># ─── Firewall ───────────────────────────────────────</span>
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw --force enable
+sudo ufw status  <span class="cm"># Kiểm tra rules</span>
+
+<span class="cm"># ─── Tạo thư mục project ────────────────────────────</span>
+sudo mkdir -p /opt/flowstate
+sudo chown $USER:$USER /opt/flowstate</div>
+  </div>
+
+  <div class="box bs">
+    <span class="box-icon">✅</span>
+    <div class="box-body"><strong>Checkpoint:</strong> <code>docker run hello-world</code> in ra "Hello from Docker!" và <code>ufw status</code> hiện ACTIVE là xong.</div>
+  </div>
+
+  <h3>Thêm swap (quan trọng với VPS 1GB RAM)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Swap giúp VPS không bị crash khi hết RAM khi build Docker</span>
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+<span class="cm"># Tự động mount khi reboot</span>
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+free -h  <span class="cm"># Kiểm tra — phải thấy Swap: 2.0G</span></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 4: CLONE CODE & CONFIG -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s4">
+  <div class="step-hdr">
+    <div class="step-num c4">04</div>
+    <div class="step-meta">
+      <div class="step-title">Clone Code &amp; Cấu Hình .env</div>
+      <div class="step-sub">Đưa source code lên server và điền thông tin bí mật</div>
+    </div>
+    <div class="step-dur">⏱ 20 phút</div>
+  </div>
+
+  <h3>4.1 — Push code lên GitHub (từ máy tính của bạn)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash — máy tính của bạn</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Trong thư mục flowstate-vps trên máy tính:</span>
+git init
+git add .
+git commit -m "feat: initial FlowState VPS setup"
+git branch -M main
+
+<span class="cm"># Tạo repo mới trên github.com trước, sau đó:</span>
+git remote add origin https://github.com/YOUR_USERNAME/flowstate.git
+git push -u origin main</div>
+  </div>
+
+  <h3>4.2 — Clone về VPS (trong SSH session)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash — trong SSH</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb">cd /opt/flowstate
+
+<span class="cm"># Clone repo (thay bằng URL repo của bạn)</span>
+git clone https://github.com/YOUR_USERNAME/flowstate.git .
+
+<span class="cm"># Kiểm tra files đã có chưa</span>
+ls -la
+<span class="cm"># Phải thấy: Dockerfile, docker-compose.yml, src/, prisma/, nginx/, scripts/, ...</span></div>
+  </div>
+
+  <h3>4.3 — Tạo file .env</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash — trong SSH</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Copy template</span>
+cp .env.example .env
+
+<span class="cm"># Mở editor (nano dễ dùng nhất)</span>
+nano .env
+
+<span class="cm"># Trong nano:
+#   Ctrl+O → Enter để lưu
+#   Ctrl+X để thoát</span></div>
+  </div>
+
+  <p>Điền đầy đủ file .env. Với các secrets, tạo bằng lệnh này:</p>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Tạo NEXTAUTH_SECRET (chạy 1 lần, copy output vào .env)</span>
+openssl rand -base64 32
+
+<span class="cm"># Tạo DB password mạnh</span>
+openssl rand -base64 24
+
+<span class="cm"># Tạo Redis password</span>
+openssl rand -base64 24</div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-lang">.env — nội dung cần điền</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb">NEXT_PUBLIC_APP_URL=<span class="str">"https://YOURDOMAIN.COM"</span>
+NEXTAUTH_URL=<span class="str">"https://YOURDOMAIN.COM"</span>
+NEXTAUTH_SECRET=<span class="str">"output-từ-openssl-rand"</span>
+
+POSTGRES_DB=<span class="str">"flowstate"</span>
+POSTGRES_USER=<span class="str">"flowstate"</span>
+POSTGRES_PASSWORD=<span class="str">"password-mạnh-ở-đây"</span>
+DATABASE_URL=<span class="str">"postgresql://flowstate:password-mạnh-ở-đây@postgres:5432/flowstate"</span>
+
+REDIS_PASSWORD=<span class="str">"redis-password-mạnh"</span>
+REDIS_URL=<span class="str">"redis://:redis-password-mạnh@redis:6379"</span>
+
+GOOGLE_CLIENT_ID=<span class="str">"xxx.apps.googleusercontent.com"</span>
+GOOGLE_CLIENT_SECRET=<span class="str">"GOCSPX-xxx"</span>
+
+ADMIN_EMAIL=<span class="str">"your@gmail.com"</span></div>
+  </div>
+
+  <h3>4.4 — Cập nhật domain trong nginx config và next.config.ts</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Thay YOURDOMAIN.COM bằng domain thật (1 lệnh)</span>
+sed -i 's/YOURDOMAIN.COM/flowstate.app/g' nginx/conf.d/flowstate.conf
+sed -i 's/YOURDOMAIN.COM/flowstate.app/g' next.config.ts
+
+<span class="cm"># Kiểm tra lại</span>
+grep -n "flowstate.app" nginx/conf.d/flowstate.conf</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 5: SSL -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s5">
+  <div class="step-hdr">
+    <div class="step-num c5">05</div>
+    <div class="step-meta">
+      <div class="step-title">Lấy SSL Certificate (HTTPS miễn phí)</div>
+      <div class="step-sub">Let's Encrypt — certificate tự động renew mỗi 90 ngày</div>
+    </div>
+    <div class="step-dur">⏱ 10 phút</div>
+  </div>
+
+  <div class="box bw">
+    <span class="box-icon">⚠️</span>
+    <div class="box-body"><strong>Bước này cần domain đã trỏ về IP VPS trước!</strong> Nếu chưa có domain, bỏ qua và làm ở bước 7. Tạm thời dùng HTTP để test.</div>
+  </div>
+
+  <h3>Cách 1: Dùng script có sẵn (dễ nhất)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb">cd /opt/flowstate
+bash scripts/setup-ssl.sh flowstate.app
+<span class="cm"># Script sẽ tự lấy certificate cho cả flowstate.app và www.flowstate.app</span></div>
+  </div>
+
+  <h3>Cách 2: Thủ công (để hiểu rõ hơn)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Tạo Docker volumes cho certbot</span>
+docker volume create flowstate_certbot_webroot
+docker volume create flowstate_certbot_certs
+
+<span class="cm"># Khởi động nginx tạm (HTTP only) để verify domain</span>
+docker run -d --name nginx_temp \
+  -p 80:80 \
+  -v flowstate_certbot_webroot:/var/www/certbot \
+  nginx:alpine
+
+<span class="cm"># Lấy certificate</span>
+docker run --rm \
+  -v flowstate_certbot_certs:/etc/letsencrypt \
+  -v flowstate_certbot_webroot:/var/www/certbot \
+  certbot/certbot certonly \
+  --webroot --webroot-path=/var/www/certbot \
+  --email your@email.com \
+  --agree-tos --no-eff-email \
+  -d flowstate.app -d www.flowstate.app
+
+<span class="cm"># Dọn dẹp nginx tạm</span>
+docker stop nginx_temp && docker rm nginx_temp
+
+<span class="cm"># Kiểm tra certificate đã tồn tại</span>
+docker run --rm -v flowstate_certbot_certs:/etc/letsencrypt \
+  certbot/certbot certificates</div>
+  </div>
+
+  <div class="box bs">
+    <span class="box-icon">✅</span>
+    <div class="box-body"><strong>Thành công khi thấy:</strong> "Congratulations! Your certificate and chain have been saved at /etc/letsencrypt/live/flowstate.app/"</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 6: BUILD & RUN -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s6">
+  <div class="step-hdr">
+    <div class="step-num c6">06</div>
+    <div class="step-meta">
+      <div class="step-title">Build &amp; Chạy Docker Containers</div>
+      <div class="step-sub">Lần đầu tiên deploy FlowState lên server</div>
+    </div>
+    <div class="step-dur">⏱ 15 phút</div>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb">cd /opt/flowstate
+
+<span class="cm"># ─── Build tất cả Docker images ─────────────────────</span>
+<span class="cm"># Lần đầu tốn ~5-10 phút (tải Node.js base image, build Next.js)</span>
+docker compose build
+
+<span class="cm"># ─── Khởi động Database và Redis trước ──────────────</span>
+docker compose up -d postgres redis
+
+<span class="cm"># Chờ database sẵn sàng (~10 giây)</span>
+sleep 10
+
+<span class="cm"># ─── Chạy database migrations ───────────────────────</span>
+docker compose run --rm app npx prisma migrate deploy
+
+<span class="cm"># ─── Seed dữ liệu ban đầu (playlists nhạc) ──────────</span>
+docker compose run --rm app npx tsx prisma/seed.ts
+
+<span class="cm"># ─── Khởi động tất cả services ──────────────────────</span>
+docker compose up -d
+
+<span class="cm"># ─── Kiểm tra tất cả đang chạy ──────────────────────</span>
+docker compose ps</div>
+  </div>
+
+  <h3>Kết quả mong đợi</h3>
+  <div class="code-wrap">
+    <div class="cb"><span class="cm">NAME                   STATUS          PORTS</span>
+flowstate_db           Up (healthy)    5432/tcp
+flowstate_redis        Up (healthy)    6379/tcp
+flowstate_app          Up (healthy)    3000/tcp
+flowstate_nginx        Up              0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp
+flowstate_certbot      Up</div>
+  </div>
+
+  <h3>Test xem app đang chạy</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Test trực tiếp trên server (bỏ qua nginx)</span>
+curl http://localhost:3000/api/health
+<span class="cm"># → {"status":"ok","timestamp":"2024-..."}</span>
+
+<span class="cm"># Test qua nginx (HTTP)</span>
+curl http://localhost/api/health
+<span class="cm"># → cùng response</span>
+
+<span class="cm"># Xem logs realtime</span>
+docker compose logs -f app
+<span class="cm"># Ctrl+C để thoát</span></div>
+  </div>
+
+  <h3>Lệnh quản lý hữu ích</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Xem logs của service cụ thể</span>
+docker compose logs -f app       <span class="cm"># Next.js app</span>
+docker compose logs -f nginx     <span class="cm"># Nginx access/error logs</span>
+docker compose logs -f postgres  <span class="cm"># Database logs</span>
+
+<span class="cm"># Restart service</span>
+docker compose restart app
+
+<span class="cm"># Dừng tất cả</span>
+docker compose down
+
+<span class="cm"># Vào bên trong container để debug</span>
+docker exec -it flowstate_app sh
+docker exec -it flowstate_db psql -U flowstate flowstate
+
+<span class="cm"># Xem dung lượng disk Docker đang dùng</span>
+docker system df</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 7: DOMAIN -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s7">
+  <div class="step-hdr">
+    <div class="step-num c7">07</div>
+    <div class="step-meta">
+      <div class="step-title">Trỏ Domain Về VPS</div>
+      <div class="step-sub">Cài DNS records để domain.com → IP VPS</div>
+    </div>
+    <div class="step-dur">⏱ 10 phút + chờ DNS</div>
+  </div>
+
+  <h3>Cài DNS records tại nhà cung cấp domain</h3>
+  <p>Vào trang quản lý domain (Namecheap/Inet/Cloudflare...) → DNS Management → Thêm 2 records:</p>
+
+  <div class="code-wrap">
+    <div class="code-lang">DNS Records cần tạo</div>
+    <div class="cb">Type    Name    Value               TTL
+<span class="nm">A</span>       <span class="str">@</span>       <span class="fn">YOUR_VPS_IP</span>         3600   <span class="cm">← domain.com → IP VPS</span>
+<span class="nm">A</span>       <span class="str">www</span>     <span class="fn">YOUR_VPS_IP</span>         3600   <span class="cm">← www.domain.com → IP VPS</span>
+
+<span class="cm"># Ví dụ: IP VPS là 167.172.100.50, domain là flowstate.app</span>
+<span class="nm">A</span>       @       <span class="fn">167.172.100.50</span>      3600
+<span class="nm">A</span>       www     <span class="fn">167.172.100.50</span>      3600</div>
+  </div>
+
+  <h3>Kiểm tra DNS đã propagate chưa</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash — máy tính của bạn</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Kiểm tra domain đã trỏ đúng chưa</span>
+nslookup flowstate.app
+<span class="cm"># → Phải thấy IP VPS của bạn</span>
+
+<span class="cm"># Hoặc dùng website: dnschecker.org</span>
+
+<span class="cm"># Test HTTPS sau khi DNS đã propagate</span>
+curl https://flowstate.app/api/health
+<span class="cm"># → {"status":"ok","timestamp":"..."} → 🎉 Thành công!</span></div>
+  </div>
+
+  <div class="box bi">
+    <span class="box-icon">⏱</span>
+    <div class="box-body"><strong>DNS mất bao lâu?</strong> Thường 5–15 phút với Cloudflare. Có thể đến 48 giờ với các nhà cung cấp khác (hiếm gặp). Dùng <a href="https://dnschecker.org" target="_blank">dnschecker.org</a> để kiểm tra từ nhiều nơi trên thế giới.</div>
+  </div>
+
+  <h3>Cập nhật Google OAuth với domain mới</h3>
+  <div class="code-wrap">
+    <div class="code-lang">Google Console</div>
+    <div class="cb"><span class="cm"># Vào console.cloud.google.com → Credentials → OAuth 2.0 Client</span>
+<span class="cm"># Thêm vào "Authorized redirect URIs":</span>
+
+https://flowstate.app/api/auth/callback/google</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 8: CI/CD -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s8">
+  <div class="step-hdr">
+    <div class="step-num c3">08</div>
+    <div class="step-meta">
+      <div class="step-title">CI/CD Tự Động với GitHub Actions</div>
+      <div class="step-sub">Push code → tự động build và deploy lên VPS</div>
+    </div>
+    <div class="step-dur">⏱ 20 phút</div>
+  </div>
+
+  <div class="box bi">
+    <span class="box-icon">🔄</span>
+    <div class="box-body"><strong>Luồng hoạt động:</strong> Bạn sửa code trên máy → <code>git push</code> → GitHub Actions chạy → SSH vào VPS → <code>git pull</code> + <code>docker compose build</code> + restart → Done! Không cần làm tay nữa.</div>
+  </div>
+
+  <h3>8.1 — Tạo SSH key riêng cho CI/CD</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash — máy tính của bạn</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Tạo SSH key mới chỉ dùng cho GitHub Actions</span>
+ssh-keygen -t ed25519 -C "github-actions-flowstate" -f ~/.ssh/flowstate_deploy
+
+<span class="cm"># Sẽ tạo ra 2 files:</span>
+<span class="cm"># ~/.ssh/flowstate_deploy       → Private key (thêm vào GitHub Secrets)</span>
+<span class="cm"># ~/.ssh/flowstate_deploy.pub   → Public key (thêm vào VPS)</span>
+
+<span class="cm"># Xem public key</span>
+cat ~/.ssh/flowstate_deploy.pub
+
+<span class="cm"># Xem private key (copy toàn bộ để thêm vào GitHub)</span>
+cat ~/.ssh/flowstate_deploy</div>
+  </div>
+
+  <h3>8.2 — Thêm public key vào VPS</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash — trong SSH session</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Mở file authorized_keys trên VPS</span>
+nano ~/.ssh/authorized_keys
+
+<span class="cm"># Paste public key từ flowstate_deploy.pub vào một dòng mới</span>
+<span class="cm"># Lưu: Ctrl+O → Enter → Ctrl+X</span>
+
+<span class="cm"># Set quyền đúng</span>
+chmod 600 ~/.ssh/authorized_keys</div>
+  </div>
+
+  <h3>8.3 — Thêm Secrets vào GitHub</h3>
+  <ol class="steps">
+    <li data-n="1">Vào <strong>github.com/YOUR_USERNAME/flowstate → Settings → Secrets and variables → Actions</strong></li>
+    <li data-n="2">Click <strong>New repository secret</strong>, thêm lần lượt:</li>
+  </ol>
+
+  <div class="code-wrap">
+    <div class="code-lang">GitHub Secrets cần tạo</div>
+    <div class="cb">VPS_HOST     = <span class="str">167.172.xxx.xxx</span>          <span class="cm">← IP VPS</span>
+VPS_USER     = <span class="str">deploy</span>                   <span class="cm">← Username SSH</span>
+VPS_SSH_KEY  = <span class="str">-----BEGIN OPENSSH PRIVATE KEY-----
+...toàn bộ nội dung file flowstate_deploy...
+-----END OPENSSH PRIVATE KEY-----</span>
+VPS_PORT     = <span class="str">22</span></div>
+  </div>
+
+  <h3>8.4 — File CI/CD (đã có trong source code)</h3>
+  <p>File <code>.github/workflows/deploy.yml</code> đã được tạo sẵn. Mỗi khi push lên branch <code>main</code>:</p>
+  <div class="code-wrap">
+    <div class="code-lang">bash — từ máy tính khi update code</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Sửa code, sau đó:</span>
+git add .
+git commit -m "feat: thêm tính năng mới"
+git push origin main
+
+<span class="cm"># → GitHub Actions tự động:
+#   1. Chạy type check
+#   2. SSH vào VPS
+#   3. git pull
+#   4. docker compose build
+#   5. migrate database
+#   6. restart containers
+#   7. health check
+# Xem tiến trình tại: github.com/YOUR_USERNAME/flowstate/actions</span></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 9: MONITORING & BACKUP -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s9">
+  <div class="step-hdr">
+    <div class="step-num c5">09</div>
+    <div class="step-meta">
+      <div class="step-title">Monitoring &amp; Backup</div>
+      <div class="step-sub">Theo dõi server và bảo vệ dữ liệu</div>
+    </div>
+    <div class="step-dur">⏱ 15 phút</div>
+  </div>
+
+  <h3>Xem tình trạng server</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Tình trạng tất cả containers</span>
+docker compose ps
+
+<span class="cm"># CPU và RAM usage</span>
+docker stats --no-stream
+
+<span class="cm"># Disk usage</span>
+df -h
+
+<span class="cm"># Logs lỗi gần đây</span>
+docker compose logs --tail=50 app
+
+<span class="cm"># Nginx access logs</span>
+docker exec flowstate_nginx tail -f /var/log/nginx/access.log</div>
+  </div>
+
+  <h3>Setup UptimeRobot (free monitoring)</h3>
+  <ol class="steps">
+    <li data-n="1">Vào <a href="https://uptimerobot.com" target="_blank">uptimerobot.com</a> → Free account</li>
+    <li data-n="2">Add New Monitor → HTTP(s) → URL: <code>https://flowstate.app/api/health</code></li>
+    <li data-n="3">Interval: 5 minutes → Email alert khi down</li>
+    <li data-n="4">Bạn sẽ nhận email ngay khi website bị down</li>
+  </ol>
+
+  <h3>Backup database thủ công</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Backup ngay lập tức</span>
+docker exec flowstate_db pg_dump -U flowstate flowstate > backup_$(date +%Y%m%d).sql
+gzip backup_$(date +%Y%m%d).sql
+
+<span class="cm"># Restore từ backup</span>
+gunzip backup_20241201.sql.gz
+docker exec -i flowstate_db psql -U flowstate flowstate < backup_20241201.sql</div>
+  </div>
+
+  <h3>Backup tự động hàng ngày (script đã setup từ bước 3)</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Kiểm tra cron job đã được setup chưa</span>
+crontab -l
+<span class="cm"># → 0 2 * * * /opt/flowstate/backup.sh >> /opt/flowstate/logs/backup.log 2>&1</span>
+<span class="cm"># Nghĩa là: Backup lúc 2:00 AM mỗi ngày, giữ 7 ngày gần nhất</span>
+
+<span class="cm"># Test chạy backup ngay</span>
+bash /opt/flowstate/backup.sh
+
+<span class="cm"># Xem các file backup</span>
+ls -lh /opt/flowstate/backups/</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- STEP 10: TROUBLESHOOTING -->
+<!-- ════════════════════════════════════════════════════ -->
+<section class="step" id="s10">
+  <div class="step-hdr">
+    <div class="step-num c8">10</div>
+    <div class="step-meta">
+      <div class="step-title">Xử Lý Sự Cố</div>
+      <div class="step-sub">Các lỗi thường gặp và cách fix nhanh</div>
+    </div>
+    <div class="step-dur">Tham khảo</div>
+  </div>
+
+  <h3>❌ Container app không khởi động được</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Xem logs chi tiết</span>
+docker compose logs app
+
+<span class="cm"># Lỗi thường gặp:</span>
+<span class="err-hl">"Error: DATABASE_URL is not defined"</span>       <span class="cm">→ Kiểm tra file .env</span>
+<span class="err-hl">"Connection refused to postgres:5432"</span>       <span class="cm">→ Chờ postgres healthy</span>
+<span class="err-hl">"Cannot find module '/app/.next/..."</span>        <span class="cm">→ Build lại: docker compose build app</span>
+
+<span class="cm"># Rebuild từ đầu (xóa cache)</span>
+docker compose down
+docker compose build --no-cache app
+docker compose up -d</div>
+  </div>
+
+  <h3>❌ Nginx lỗi 502 Bad Gateway</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Kiểm tra app container có đang chạy không</span>
+docker compose ps
+<span class="cm"># Nếu app không "Up (healthy)":</span>
+docker compose restart app
+sleep 15
+curl http://localhost:3000/api/health  <span class="cm"># Test trực tiếp app</span>
+
+<span class="cm"># Kiểm tra nginx config</span>
+docker exec flowstate_nginx nginx -t
+<span class="cm"># "syntax is ok" → nginx config đúng</span>
+<span class="cm"># Nếu có lỗi → kiểm tra nginx/conf.d/flowstate.conf</span></div>
+  </div>
+
+  <h3>❌ SSL certificate lỗi</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Kiểm tra certificate còn hạn không</span>
+docker run --rm -v flowstate_certbot_certs:/etc/letsencrypt \
+  certbot/certbot certificates
+
+<span class="cm"># Renew thủ công</span>
+docker compose run --rm certbot renew
+
+<span class="cm"># Reload nginx sau khi renew</span>
+docker exec flowstate_nginx nginx -s reload</div>
+  </div>
+
+  <h3>❌ VPS hết RAM, app bị kill</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash</div>
+    <button class="code-copy" onclick="cp(this)">Copy</button>
+    <div class="cb"><span class="cm"># Xem RAM đang dùng</span>
+free -h
+docker stats --no-stream
+
+<span class="cm"># Giải phóng RAM Docker không dùng</span>
+docker system prune -f
+
+<span class="cm"># Nếu vẫn không đủ → nâng cấp VPS hoặc tối ưu app</span>
+<span class="cm"># DigitalOcean: Dashboard → Resize Droplet → 2GB RAM plan ($12/month)</span></div>
+  </div>
+
+  <h3>✅ Checklist cuối — Website đã sẵn sàng</h3>
+  <ul class="cl" id="finalcl">
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>Website load được tại https://flowstate.app</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>/api/health trả về {"status":"ok"}</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>Đăng nhập Google hoạt động</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>HTTPS có biểu tượng 🔒 trên trình duyệt</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>HTTP tự redirect sang HTTPS</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>docker compose ps — tất cả "Up (healthy)"</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>Push code → GitHub Actions chạy tự động</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>UptimeRobot đang monitor</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>Backup cron job đang chạy</strong></div></li>
+    <li class="cl-item" onclick="toggleCl(this)"><div class="cl-cb"></div><div class="cl-text"><strong>Admin có thể vào /admin</strong></div></li>
+  </ul>
+
+  <div class="box bs" style="margin-top:28px;">
+    <span class="box-icon">🎉</span>
+    <div class="box-body"><strong>Xin chúc mừng!</strong> FlowState đang chạy trên VPS riêng của bạn, với SSL, auto-backup, CI/CD và monitoring. Đây là setup production-grade mà nhiều startup thực sự dùng. Chi phí? ~$6–12/tháng thay vì $20+/tháng trên Vercel Pro khi có nhiều traffic.</div>
+  </div>
+</section>
+
+</main>
+</div><!-- /layout -->
+
+<script>
+// Progress bar
+window.addEventListener('scroll', () => {
+  const p = document.documentElement.scrollTop / (document.documentElement.scrollHeight - document.documentElement.clientHeight);
+  document.getElementById('pgfill').style.width = (p * 100) + '%';
+});
+
+// Active nav tracking
+const sections = document.querySelectorAll('.step');
+const links = document.querySelectorAll('.nav-link');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, { threshold: 0.35 });
+sections.forEach(s => obs.observe(s));
+
+// Copy buttons
+function cp(btn) {
+  const text = btn.parentElement.querySelector('.cb').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+// Checklist items
+let done = 0;
+const total = 10;
+function toggleCl(li) {
+  const cb = li.querySelector('.cl-cb');
+  const wasOn = cb.classList.contains('on');
+  cb.classList.toggle('on');
+  cb.textContent = cb.classList.contains('on') ? '✓' : '';
+  done += wasOn ? -1 : 1;
+  document.getElementById('progressText').textContent = `${done}/${total}`;
+  document.getElementById('sbfill').style.width = `${(done/total)*100}%`;
+  // Check nav done indicators
+  updateNavDone();
+}
+
+// Sidebar section done dots
+const sectionChecks = {
+  nd0: ['s0'], nd1: ['s1'], nd2: ['s2'], nd3: ['s3'],
+  nd4: ['s4'], nd5: ['s5'], nd6: ['s6'], nd7: ['s7'],
+  nd8: ['s8'], nd9: ['s9'], nd10: ['s10']
+};
+function updateNavDone() {
+  // simple heuristic based on scroll position
+}
+
+// Scroll reveal
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'none';
+    }
+  });
+}, { threshold: 0.06 });
+document.querySelectorAll('.step').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(14px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  ro.observe(el);
+});
+</script>
+</body>
+</html>

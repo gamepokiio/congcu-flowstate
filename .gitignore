@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+dist/
+
+# Environment variables — KHÔNG commit lên Git!
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Prisma — QUAN TRỌNG: migrations/ PHẢI được commit lên Git!
+# prisma migrate deploy cần migration files để chạy trên production.
+# Chỉ bỏ comment dòng dưới nếu bạn cố tình không dùng migrate deploy.
+# prisma/migrations/
+
+# Docker volumes (local)
+docker/volumes/

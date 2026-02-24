@@ -1,0 +1,2 @@
+# Provider used in this project
+provider = "postgresql"

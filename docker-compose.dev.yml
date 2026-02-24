@@ -1,0 +1,39 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# FlowState — Docker Compose (Development / Local)
+# Chạy: docker-compose -f docker-compose.dev.yml up
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: flowstate_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flowstate_dev
+      POSTGRES_USER: flowstate
+      POSTGRES_PASSWORD: devpassword123
+    ports:
+      - "5432:5432" # Expose để dùng Prisma Studio từ host
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - flowstate_dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: flowstate_redis_dev
+    ports:
+      - "6379:6379" # Expose để debug từ host
+    networks:
+      - flowstate_dev
+  # Next.js chạy trực tiếp trên host (hot reload)
+  # Chỉ cần: DATABASE_URL=postgresql://flowstate:devpassword123@localhost:5432/flowstate_dev npm run dev
+
+volumes:
+  postgres_dev_data:
+
+
+networks:
+  flowstate_dev:
+    driver: bridge

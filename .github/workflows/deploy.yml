@@ -1,0 +1,56 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# .github/workflows/deploy.yml
+# Tự động deploy lên VPS mỗi khi push lên branch main
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+name: 🚀 Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Cho phép chạy thủ công từ GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy FlowState
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout code ────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Chạy lint và type check ──────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --frozen-lockfile
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # ── 3. SSH vào VPS và deploy ─────────────────
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}        # IP của VPS
+          username: ${{ secrets.VPS_USER }}    # User SSH (thường là root)
+          key: ${{ secrets.VPS_SSH_KEY }}      # SSH private key
+          port: ${{ secrets.VPS_PORT || 22 }}  # Port SSH
+
+          script: |
+            cd /opt/flowstate
+            bash scripts/deploy.sh
+
+      # ── 4. Thông báo kết quả ─────────────────────
+      - name: Notify success
+        if: success()
+        run: echo "✅ Deploy thành công!"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "❌ Deploy thất bại! Kiểm tra logs."
