@@ -57,7 +57,7 @@ done
 
 # Migrate database — chạy trong container app mới build
 info "Chạy database migrations..."
-docker-compose run --rm app npx prisma migrate deploy
+docker-compose run --rm app npx prisma@5.22.0 migrate deploy
 log "Database migrated"
 
 # Restart app với image mới
