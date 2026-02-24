@@ -4,6 +4,9 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import { db } from "./db";
 
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? false;
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as any,
   providers: [
@@ -21,21 +24,43 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account }) {
-      // Tự động set ADMIN cho email đặc biệt
-      // Lưu ý: session.strategy = "database" → PrismaAdapter tạo user TRƯỚC signIn callback
-      // → Chỉ cần update, không cần upsert/create
       if (user.email && user.email === process.env.ADMIN_EMAIL && account) {
         try {
           await db.user.update({
             where: { email: user.email },
-            data:  { role: "ADMIN" },
+            data: { role: "ADMIN" },
           });
         } catch (err) {
-          // Log nhưng không block đăng nhập — user vẫn vào được với role USER
           console.warn("signIn: could not set ADMIN role:", err);
         }
       }
       return true;
+    },
+  },
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}next-auth.session-token`,
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies },
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: { sameSite: "lax", path: "/", secure: useSecureCookies },
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies },
+    },
+    pkceCodeVerifier: {
+      name: `${cookiePrefix}next-auth.pkce.code_verifier`,
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies, maxAge: 900 },
+    },
+    state: {
+      name: `${cookiePrefix}next-auth.state`,
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies, maxAge: 900 },
+    },
+    nonce: {
+      name: `${cookiePrefix}next-auth.nonce`,
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: useSecureCookies },
     },
   },
   pages: { signIn: "/login", error: "/login" },
