@@ -26,7 +26,7 @@ mkdir -p ./certbot/conf
 # ── Bước 2: Chuyển sang config HTTP-only tạm thời ──
 info "Kích hoạt Nginx HTTP-only tạm thời..."
 cp nginx/conf.d/flowstate.conf nginx/conf.d/flowstate.conf.ssl-backup
-cp nginx/conf.d/flowstate-init.conf nginx/conf.d/flowstate.conf
+cp nginx/conf.d/flowstate-init.conf.template nginx/conf.d/flowstate.conf
 
 # ── Bước 3: Restart nginx để dùng config HTTP ──────
 info "Restart Nginx (HTTP only)..."
